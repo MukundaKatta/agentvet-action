@@ -1,5 +1,5 @@
 name: "agentvet-action"
-description: "Lint LLM tool definitions in your repo (MCP/Anthropic/OpenAI tool schemas). Catches missing descriptions, bad names, missing required fields."
+description: "Lint LLM tool definitions: catches missing descriptions, bad names, and missing required fields. Generates SARIF for the Security tab."
 author: "MukundaKatta"
 
 branding:
