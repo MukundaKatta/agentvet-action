@@ -1,0 +1,15 @@
+name: Lint LLM tools
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  agentvet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: MukundaKatta/agentvet-action@v1
+        with:
+          tools-glob: "**/tools/*.json,**/mcp.json"
+          fail-on: error

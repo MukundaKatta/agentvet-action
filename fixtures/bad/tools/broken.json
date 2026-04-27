@@ -1,0 +1,16 @@
+[
+  {
+    "name": "BadCamelCase",
+    "description": "This tool has a CamelCase name (should be snake_case)."
+  },
+  {
+    "name": "missing_desc"
+  },
+  {
+    "description": "This tool has no name at all."
+  },
+  {
+    "name": "ok_name",
+    "description": "short"
+  }
+]

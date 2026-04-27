@@ -1,0 +1,7 @@
+{
+  "name": "agentvet-action",
+  "private": true,
+  "type": "module",
+  "description": "Composite action wrapper around @mukundakatta/agentvet. Installed at runtime by action.yml; this package.json exists so Node treats lint.mjs as ESM and can resolve node_modules from the action dir.",
+  "version": "0.0.0"
+}

@@ -1,0 +1,72 @@
+name: Test action
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  good-fixtures:
+    runs-on: ubuntu-latest
+    name: Good fixtures pass
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        id: vet
+        with:
+          tools-glob: "fixtures/good/**/*.json"
+          fail-on: error
+      - name: Verify outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.vet.outputs.errors }}" = "0"
+          test "${{ steps.vet.outputs.warnings }}" = "0"
+          echo "good fixtures: ${{ steps.vet.outputs.total-tools }} tools, all clean"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: good-report
+          path: agentvet-report.json
+
+  bad-fixtures:
+    runs-on: ubuntu-latest
+    name: Bad fixtures fail with fail-on=error
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        id: vet
+        continue-on-error: true
+        with:
+          tools-glob: "fixtures/bad/**/*.json"
+          fail-on: error
+      - name: Verify the action failed and counted issues
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.vet.outcome }}" != "failure" ]; then
+            echo "expected action to fail on bad fixtures"
+            exit 1
+          fi
+          test "${{ steps.vet.outputs.errors }}" -gt "0"
+          echo "bad fixtures correctly failed with ${{ steps.vet.outputs.errors }} error(s)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bad-report
+          path: agentvet-report.json
+
+  bad-fixtures-warn-only:
+    runs-on: ubuntu-latest
+    name: Bad fixtures pass with fail-on=none
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        id: vet
+        with:
+          tools-glob: "fixtures/bad/**/*.json"
+          fail-on: none
+      - name: Verify report-only mode does not fail
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.vet.outputs.errors }}" -gt "0"
+          echo "report-only mode: ${{ steps.vet.outputs.errors }} error(s) recorded but build did not fail"

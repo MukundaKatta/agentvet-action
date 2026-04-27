@@ -1,0 +1,26 @@
+[
+  {
+    "name": "send_email",
+    "description": "Send an email through the user's connected SMTP account.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "to": { "type": "string" },
+        "subject": { "type": "string" },
+        "body": { "type": "string" }
+      },
+      "required": ["to", "subject", "body"]
+    }
+  },
+  {
+    "name": "get_weather",
+    "description": "Look up the current weather for a city by name.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "city": { "type": "string" }
+      },
+      "required": ["city"]
+    }
+  }
+]

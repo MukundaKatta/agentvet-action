@@ -1,0 +1,12 @@
+{
+  "name": "search_documents",
+  "description": "Search the user's document library by full-text query and return the top N results.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "query": { "type": "string" },
+      "limit": { "type": "integer", "minimum": 1, "maximum": 50 }
+    },
+    "required": ["query"]
+  }
+}

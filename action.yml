@@ -1,0 +1,67 @@
+name: "agentvet-action"
+description: "Lint LLM tool definitions in your repo (MCP/Anthropic/OpenAI tool schemas). Catches missing descriptions, bad names, missing required fields."
+author: "MukundaKatta"
+
+branding:
+  icon: "check-circle"
+  color: "blue"
+
+inputs:
+  tools-glob:
+    description: "Comma- or newline-separated globs to scan for tool definitions (JSON files)."
+    required: false
+    default: "**/tools/*.json,**/mcp.json,**/.mcp.json"
+  fail-on:
+    description: "Severity that fails the run: error | warning | none."
+    required: false
+    default: "error"
+  report-path:
+    description: "Where to write the JSON report."
+    required: false
+    default: "agentvet-report.json"
+  node-version:
+    description: "Node version to set up."
+    required: false
+    default: "20"
+
+outputs:
+  total-tools:
+    description: "Number of tool definitions scanned."
+    value: ${{ steps.run.outputs.total-tools }}
+  errors:
+    description: "Count of tools with hard errors."
+    value: ${{ steps.run.outputs.errors }}
+  warnings:
+    description: "Count of tools with warnings."
+    value: ${{ steps.run.outputs.warnings }}
+  report-path:
+    description: "Path to the JSON report."
+    value: ${{ steps.run.outputs.report-path }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install agentvet
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        # Install into the action dir so the wrapper script can `import` the lib
+        # via Node's normal resolution (no NODE_PATH gymnastics for end users).
+        if [ ! -f package.json ]; then
+          echo '{"private":true,"type":"module"}' > package.json
+        fi
+        npm install --no-fund --no-audit --silent @mukundakatta/agentvet@latest
+
+    - name: Run agentvet linter
+      id: run
+      shell: bash
+      env:
+        AGENTVET_TOOLS_GLOB: ${{ inputs.tools-glob }}
+        AGENTVET_FAIL_ON: ${{ inputs.fail-on }}
+        AGENTVET_REPORT_PATH: ${{ inputs.report-path }}
+      run: node "$GITHUB_ACTION_PATH/lint.mjs"

@@ -1,0 +1,24 @@
+name: Tool quality report
+on:
+  pull_request:
+
+jobs:
+  agentvet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: MukundaKatta/agentvet-action@v1
+        id: vet
+        with:
+          tools-glob: "src/tools/*.json"
+          fail-on: none
+      - name: Comment results
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" --body "agentvet: ${{ steps.vet.outputs.total-tools }} tools, ${{ steps.vet.outputs.errors }} errors, ${{ steps.vet.outputs.warnings }} warnings"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agentvet-report
+          path: ${{ steps.vet.outputs.report-path }}
