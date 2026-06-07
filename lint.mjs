@@ -11,6 +11,7 @@
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { validate, adapters } from '@mukundakatta/agentvet';
 
 const cwd = process.env.GITHUB_WORKSPACE || process.cwd();
@@ -38,7 +39,7 @@ const baseShape = adapters.shape({
   description: 'string',
 });
 
-function hasInputSchema(tool) {
+export function hasInputSchema(tool) {
   return (
     (tool.inputSchema && typeof tool.inputSchema === 'object') ||
     (tool.input_schema && typeof tool.input_schema === 'object') ||
@@ -46,7 +47,7 @@ function hasInputSchema(tool) {
   );
 }
 
-function lintTool(tool, fileRel, idx) {
+export function lintTool(tool, fileRel, idx) {
   const issues = [];
   const baseRes = validate('tool-shape', baseShape, tool);
   if (!baseRes.valid) {
@@ -94,7 +95,7 @@ function lintTool(tool, fileRel, idx) {
 //   - { tools: [...] }
 //   - MCP-style { mcpServers: {...} } (servers each have a "tools" entry)
 //   - single tool object with name + description
-function extractTools(doc) {
+export function extractTools(doc) {
   if (Array.isArray(doc)) return doc;
   if (doc && typeof doc === 'object') {
     if (Array.isArray(doc.tools)) return doc.tools;
@@ -130,21 +131,34 @@ async function expandGlobs(patterns) {
   return [...matches];
 }
 
-function makeMatcher(pattern) {
-  // Convert glob to regex. ** = any depth, * = any segment chars, ? = single char.
-  const re =
-    '^' +
-    pattern
-      .split('/')
-      .map((seg) => {
-        if (seg === '**') return '(?:.*)';
-        return seg
-          .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-          .replace(/\*/g, '[^/]*')
-          .replace(/\?/g, '[^/]');
-      })
-      .join('/') +
-    '$';
+export function makeMatcher(pattern) {
+  // Convert glob to regex. ** = any depth (including zero dirs), * = any
+  // segment chars, ? = single char.
+  const segments = pattern.split('/');
+  let re = '^';
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    const last = i === segments.length - 1;
+    if (seg === '**') {
+      if (last) {
+        // Trailing ** matches anything remaining (incl. nested dirs).
+        re += '(?:.*)';
+      } else {
+        // "**/" matches zero or more leading path segments, so "**/mcp.json"
+        // also matches a root-level "mcp.json". The group absorbs the
+        // following separator, so don't append one below.
+        re += '(?:[^/]+/)*';
+        continue;
+      }
+    } else {
+      re += seg
+        .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+        .replace(/\*/g, '[^/]*')
+        .replace(/\?/g, '[^/]');
+    }
+    if (!last) re += '/';
+  }
+  re += '$';
   const rx = new RegExp(re);
   return (relPath) => rx.test(relPath.split(sep).join('/'));
 }
@@ -261,7 +275,11 @@ async function main() {
   if (failOn === 'warning' && (totalErrors > 0 || totalWarnings > 0)) process.exit(1);
 }
 
-main().catch((err) => {
-  console.error(`[agentvet] fatal: ${err.stack || err.message}`);
-  process.exit(2);
-});
+// Only run the linter when executed directly (e.g. `node lint.mjs`), not when
+// imported as a module (e.g. by the test suite).
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main().catch((err) => {
+    console.error(`[agentvet] fatal: ${err.stack || err.message}`);
+    process.exit(2);
+  });
+}
