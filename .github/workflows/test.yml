@@ -34,7 +34,7 @@ jobs:
           test "${{ steps.vet.outputs.errors }}" = "0"
           test "${{ steps.vet.outputs.warnings }}" = "0"
           echo "good fixtures: ${{ steps.vet.outputs.total-tools }} tools, all clean"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: good-report
           path: agentvet-report.json
@@ -60,7 +60,7 @@ jobs:
           fi
           test "${{ steps.vet.outputs.errors }}" -gt "0"
           echo "bad fixtures correctly failed with ${{ steps.vet.outputs.errors }} error(s)"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: bad-report
           path: agentvet-report.json
